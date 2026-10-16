@@ -1,15 +1,23 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { toast } from "sonner";
-import owlImg from "@/assets/owl.png";
+import aceIcon from "@/assets/app/ace-icon.webp";
 
 export function AuthComponent() {
+  usePageTitle("Sign in");
   return <AuthPage />;
 }
 
 type Mode = "login" | "signup" | "verify";
+
+const HEADINGS: Record<Mode, string> = {
+  login: "Sign in",
+  signup: "Create your free account",
+  verify: "Confirm your email",
+};
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -19,6 +27,7 @@ function AuthPage() {
   const [fullName, setFullName] = useState("");
   const [otp, setOtp] = useState("");
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -26,167 +35,185 @@ function AuthPage() {
     });
   }, [navigate]);
 
+  const go = (m: Mode) => { setError(""); setMode(m); };
+
   const onGoogle = async () => {
+    setError("");
     setBusy(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: window.location.origin },
-      });
-      if (error) {
-        toast.error("Google sign-in failed. Please try again.");
-        setBusy(false);
-      }
+      const { error: err } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
+      if (err) { setError("Google sign-in did not work. Try again, or use your email instead."); setBusy(false); }
     } catch {
-      toast.error("Something went wrong.");
+      setError("Something went wrong. Check your connection and try again.");
       setBusy(false);
     }
   };
 
   const onSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) return toast.error("Password must be at least 6 characters.");
+    setError("");
+    if (password.length < 6) return setError("Your password needs at least 6 characters.");
     setBusy(true);
-    const { error } = await supabase.auth.signUp({
+    const { error: err } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/`,
-        data: { full_name: fullName },
-      },
+      options: { emailRedirectTo: `${window.location.origin}/`, data: { full_name: fullName } },
     });
     setBusy(false);
-    if (error) return toast.error(error.message);
+    if (err) return setError(err.message);
     toast.success("We sent a 6-digit code to your email.");
-    setMode("verify");
+    go("verify");
   };
 
   const onVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({ email, token: otp.trim(), type: "signup" });
+    const { error: err } = await supabase.auth.verifyOtp({ email, token: otp.trim(), type: "signup" });
     setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Email confirmed! Welcome to ScholarMate 🦉");
+    if (err) return setError(err.message);
+    toast.success("Email confirmed. Welcome to ScholarMate.");
     navigate({ to: "/" });
   };
 
   const resendCode = async () => {
+    setError("");
     setBusy(true);
-    const { error } = await supabase.auth.resend({ type: "signup", email });
+    const { error: err } = await supabase.auth.resend({ type: "signup", email });
     setBusy(false);
-    if (error) return toast.error(error.message);
-    toast.success("Code resent. Check your inbox.");
+    if (err) return setError(err.message);
+    toast.success("Code sent again. Check your inbox and spam folder.");
   };
 
   const onLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
     setBusy(false);
-    if (error) {
-      if (error.message.toLowerCase().includes("email not confirmed")) {
-        toast.error("Please confirm your email first.");
-        setMode("verify");
+    if (err) {
+      if (err.message.toLowerCase().includes("email not confirmed")) {
+        toast.info("Confirm your email first. We will ask for the code.");
+        go("verify");
         return;
       }
-      return toast.error(error.message);
+      return setError(err.message);
     }
-    toast.success("Welcome back!");
+    toast.success("Welcome back.");
     navigate({ to: "/" });
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0F172A] text-slate-100">
-      <div className="pointer-events-none absolute inset-0 sm-grid-bg" />
-      <div className="pointer-events-none absolute -top-32 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-violet-600/20 blur-3xl" />
-      <div className="relative mx-auto flex min-h-screen max-w-md flex-col px-5 py-10 sm:px-8">
+    <div className="min-h-screen bg-[#0F172A] text-slate-100">
+      <main className="mx-auto flex min-h-screen max-w-md flex-col px-5 py-10 sm:px-8">
         <Link to="/" className="mb-8 flex items-center gap-2 self-start text-sm text-slate-300 hover:text-white">
-          <img src={owlImg} alt="" className="h-8 w-8 object-contain" />
-          <span className="font-bold text-white">ScholarMate</span>
+          <img src={aceIcon} width={32} height={32} alt="" className="h-8 w-8 rounded-md object-contain" />
+          <span className="font-semibold text-white">ScholarMate</span>
         </Link>
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="sm-card rounded-3xl p-7 sm:p-9">
-          <div className="text-center">
-            <img src={owlImg} alt="" className="sm-owl-float mx-auto h-16 w-16 object-contain" />
-            <h1 className="mt-4 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
-              {mode === "login" && <>Welcome <span className="sm-gradient-text">back</span></>}
-              {mode === "signup" && <>Join <span className="sm-gradient-text">ScholarMate</span></>}
-              {mode === "verify" && <>Verify your <span className="sm-gradient-text">email</span></>}
-            </h1>
-            <p className="mt-2 text-sm text-slate-400">
-              {mode === "login" && "Sign in to download the app and continue learning."}
-              {mode === "signup" && "Create your free account in seconds."}
-              {mode === "verify" && `Enter the 6-digit code sent to ${email}.`}
-            </p>
-          </div>
+
+        <div className="sm-card rounded-lg p-6 sm:p-8">
+          {mode !== "login" && (
+            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Step {mode === "signup" ? 1 : 2} of 2</p>
+          )}
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-white">{HEADINGS[mode]}</h1>
+          <p className="mt-2 text-sm text-slate-300">
+            {mode === "login" && "You need an account to download the app. It is free."}
+            {mode === "signup" && "Enter your details. We email you a 6-digit code to confirm your address."}
+            {mode === "verify" && `Enter the 6-digit code we sent to ${email || "your email"}.`}
+          </p>
+
           {mode !== "verify" && (
             <>
-              <p className="mt-6 rounded-xl border border-violet-400/20 bg-violet-500/5 px-4 py-3 text-center text-xs leading-relaxed text-slate-300">
-                🔒 We only use your Google email to save your progress — nothing else. This is safe and standard.
-              </p>
-              <button onClick={onGoogle} disabled={busy} className="mt-3 flex w-full items-center justify-center gap-3 rounded-xl border border-white/15 bg-white px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-100 disabled:opacity-60">
+              <button onClick={onGoogle} disabled={busy} className="mt-6 flex w-full items-center justify-center gap-3 rounded-lg border border-white/15 bg-white px-4 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100 disabled:opacity-60">
                 <GoogleIcon />
                 Continue with Google
               </button>
-              <div className="my-6 flex items-center gap-3 text-xs text-slate-500">
-                <div className="h-px flex-1 bg-white/10" />OR<div className="h-px flex-1 bg-white/10" />
+              <p className="mt-2 text-xs text-slate-400">Google shares only your name and email with us.</p>
+              <div className="my-5 flex items-center gap-3 text-xs text-slate-400">
+                <div className="h-px flex-1 bg-white/10" />or use email<div className="h-px flex-1 bg-white/10" />
               </div>
             </>
           )}
+
           {mode === "login" && (
             <form onSubmit={onLogin} className="space-y-3">
-              <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@unilag.edu.ng" />
-              <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="••••••••" />
+              <Field id="email" label="Email" type="email" autoComplete="email" value={email} onChange={setEmail} placeholder="you@example.com" />
+              <PasswordField id="password" label="Password" autoComplete="current-password" value={password} onChange={setPassword} placeholder="Your password" />
+              <ErrorLine message={error} />
               <SubmitButton busy={busy}>Sign in</SubmitButton>
-              <p className="pt-3 text-center text-sm text-slate-400">
+              <p className="pt-3 text-center text-sm text-slate-300">
                 New here?{" "}
-                <button type="button" onClick={() => setMode("signup")} className="font-semibold text-violet-300 hover:text-violet-200">Create an account</button>
+                <button type="button" onClick={() => go("signup")} className="font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Create an account</button>
               </p>
             </form>
           )}
           {mode === "signup" && (
             <form onSubmit={onSignup} className="space-y-3">
-              <Field label="Full name" type="text" value={fullName} onChange={setFullName} placeholder="Prince Isaac" />
-              <Field label="Email" type="email" value={email} onChange={setEmail} placeholder="you@unilag.edu.ng" />
-              <Field label="Password" type="password" value={password} onChange={setPassword} placeholder="At least 6 characters" />
+              <Field id="full-name" label="Full name" type="text" autoComplete="name" value={fullName} onChange={setFullName} placeholder="Your full name" />
+              <Field id="email" label="Email" type="email" autoComplete="email" value={email} onChange={setEmail} placeholder="you@example.com" />
+              <PasswordField id="new-password" label="Password" autoComplete="new-password" value={password} onChange={setPassword} placeholder="At least 6 characters" />
+              <ErrorLine message={error} />
               <SubmitButton busy={busy}>Create account</SubmitButton>
-              <p className="pt-3 text-center text-sm text-slate-400">
+              <p className="pt-3 text-center text-sm text-slate-300">
                 Already have an account?{" "}
-                <button type="button" onClick={() => setMode("login")} className="font-semibold text-violet-300 hover:text-violet-200">Sign in</button>
+                <button type="button" onClick={() => go("login")} className="font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Sign in</button>
               </p>
             </form>
           )}
           {mode === "verify" && (
             <form onSubmit={onVerify} className="space-y-3">
-              <Field label="Verification code" type="text" value={otp} onChange={(v) => setOtp(v.replace(/\D/g, "").slice(0, 6))} placeholder="123456" />
-              <SubmitButton busy={busy}>Verify & continue</SubmitButton>
+              <Field id="otp" label="Verification code" type="text" inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={(v) => setOtp(v.replace(/\D/g, "").slice(0, 6))} placeholder="6 digits" />
+              <ErrorLine message={error} />
+              <SubmitButton busy={busy}>Confirm and continue</SubmitButton>
               <div className="flex items-center justify-between pt-3 text-sm">
-                <button type="button" onClick={() => setMode("signup")} className="text-slate-400 hover:text-white">← Back</button>
-                <button type="button" onClick={resendCode} disabled={busy} className="font-semibold text-violet-300 hover:text-violet-200">Resend code</button>
+                <button type="button" onClick={() => go("signup")} className="text-slate-300 underline underline-offset-4 hover:text-white">Back</button>
+                <button type="button" onClick={resendCode} disabled={busy} className="font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200">Send the code again</button>
               </div>
             </form>
           )}
-        </motion.div>
-        <p className="mt-6 text-center text-xs text-slate-500">By continuing you agree to use ScholarMate for academic purposes.</p>
+        </div>
+        <p className="mt-6 text-center text-xs text-slate-400">
+          By continuing you agree to the <Link to="/terms" className="underline underline-offset-4 hover:text-white">Terms</Link> and the <Link to="/privacy" className="underline underline-offset-4 hover:text-white">Privacy Policy</Link>.
+        </p>
+      </main>
+    </div>
+  );
+}
+
+const INPUT = "w-full rounded-lg border border-white/15 bg-transparent px-4 py-3 text-sm text-white placeholder:text-slate-400";
+
+function Field({ id, label, type, value, onChange, placeholder, autoComplete, inputMode }: { id: string; label: string; type: string; value: string; onChange: (v: string) => void; placeholder?: string; autoComplete?: string; inputMode?: "numeric" }) {
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-slate-200">{label}</label>
+      <input id={id} required type={type} inputMode={inputMode} autoComplete={autoComplete} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={INPUT} />
+    </div>
+  );
+}
+
+function PasswordField({ id, label, value, onChange, placeholder, autoComplete }: { id: string; label: string; value: string; onChange: (v: string) => void; placeholder?: string; autoComplete?: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div>
+      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-slate-200">{label}</label>
+      <div className="relative">
+        <input id={id} required type={show ? "text" : "password"} autoComplete={autoComplete} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={`${INPUT} pr-12`} />
+        <button type="button" onClick={() => setShow((s) => !s)} aria-label={show ? "Hide password" : "Show password"} aria-pressed={show} className="absolute inset-y-0 right-0 grid w-12 place-items-center text-slate-300 hover:text-white">
+          {show ? <EyeOff size={18} aria-hidden /> : <Eye size={18} aria-hidden />}
+        </button>
       </div>
     </div>
   );
 }
 
-function Field({ label, type, value, onChange, placeholder }: { label: string; type: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</span>
-      <input required type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-        className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-white/[0.07] focus:ring-2 focus:ring-violet-500/30" />
-    </label>
-  );
+function ErrorLine({ message }: { message: string }) {
+  return <div aria-live="assertive">{message && <p role="alert" className="text-sm font-medium text-rose-300">{message}</p>}</div>;
 }
 
 function SubmitButton({ busy, children }: { busy: boolean; children: React.ReactNode }) {
   return (
-    <button type="submit" disabled={busy} className="sm-btn-primary mt-2 w-full rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-60">
-      {busy ? "Please wait…" : children}
+    <button type="submit" disabled={busy} className="sm-btn-primary mt-2 w-full rounded-lg px-4 py-3 text-sm font-semibold text-white disabled:opacity-60">
+      {busy ? "Please wait" : children}
     </button>
   );
 }

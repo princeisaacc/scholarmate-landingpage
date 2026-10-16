@@ -1,20 +1,25 @@
 import { Link } from "@tanstack/react-router";
-import aceIcon from "@/assets/app/ace-icon.png";
+import aceIcon from "@/assets/app/ace-icon.webp";
+import { usePageTitle } from "@/hooks/use-page-title";
+import { CONTACT_EMAIL, INSTAGRAM_HANDLE, INSTAGRAM_URL } from "@/lib/site";
 
 export function TermsComponent() {
+  usePageTitle("Terms of Use");
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-100">
-      <nav className="border-b border-white/10 bg-[#0F172A]/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0F172A]">
+        <nav aria-label="Main">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-8">
           <Link to="/" className="flex items-center gap-2">
             <img src={aceIcon} alt="" className="h-8 w-8 rounded-lg object-contain" />
             <span className="font-bold text-white">ScholarMate</span>
           </Link>
-          <Link to="/" className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10">
-            ← Home
+          <Link to="/" className="sm-btn-ghost rounded-lg px-3 py-2 text-xs font-semibold text-slate-100">
+            Back to home
           </Link>
         </div>
-      </nav>
+        </nav>
+      </header>
 
       <main className="mx-auto max-w-3xl px-4 py-16 sm:px-8">
         <h1 className="text-4xl font-extrabold tracking-tight text-white">Terms of Use</h1>
@@ -29,7 +34,7 @@ export function TermsComponent() {
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">2. Description of Service</h2>
-            <p>ScholarMate is a free AI-powered study companion application for university students. Features include AI-generated notes, flashcards, quizzes, a CGPA calculator, study planner, study timer, and more. The app is provided free of charge and is intended for personal, academic use only.</p>
+            <p>ScholarMate is an AI-powered study companion application for university students. Features include AI-generated notes, flashcards, quizzes, a CGPA calculator, study planner, study timer, and more. The app has a free plan and an optional paid Pro plan. Current Pro prices are shown on the website and in the app. It is intended for personal, academic use only.</p>
           </section>
 
           <section>
@@ -39,7 +44,7 @@ export function TermsComponent() {
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">4. Account Responsibility</h2>
-            <p>You are responsible for keeping your account credentials secure. Do not share your password with others. You are responsible for all activity that occurs under your account. Notify us immediately at <a href="mailto:princeaistudio@gmail.com" className="text-indigo-400 hover:underline">princeaistudio@gmail.com</a> if you suspect unauthorized access.</p>
+            <p>You are responsible for keeping your account credentials secure. Do not share your password with others. You are responsible for all activity that occurs under your account. Notify us immediately at <a href={`mailto:${CONTACT_EMAIL}`} className="text-emerald-300 underline underline-offset-2">{CONTACT_EMAIL}</a> if you suspect unauthorized access.</p>
           </section>
 
           <section>
@@ -96,12 +101,12 @@ export function TermsComponent() {
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">14. Contact</h2>
-            <p>For questions about these terms, contact us at <a href="mailto:princeaistudio@gmail.com" className="text-indigo-400 hover:underline">princeaistudio@gmail.com</a>.</p>
+            <p>For questions about these terms, contact us at <a href={`mailto:${CONTACT_EMAIL}`} className="text-emerald-300 underline underline-offset-2">{CONTACT_EMAIL}</a>.</p>
           </section>
         </div>
       </main>
 
-      <footer className="border-t border-white/10 bg-[#060912] px-5 py-8 mt-16 text-center text-sm text-slate-500">
+      <footer className="border-t border-white/10 bg-[#060912] px-5 py-8 mt-16 text-center text-sm text-slate-400">
         © 2026 Prince AI Studio · <Link to="/terms" className="hover:text-white">Terms</Link> · <Link to="/privacy" className="hover:text-white">Privacy</Link>
       </footer>
     </div>

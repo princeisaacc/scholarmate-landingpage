@@ -1,8 +1,7 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { FREE_COURSES, FREE_FLASHCARDS, type CourseCode } from "./free-content-data";
-
-const DOWNLOAD_URL = "https://dub.sh/scholarmate-app";
+import { DOWNLOAD_URL } from "@/lib/site";
 
 export function FreeFlashcards() {
   const [course, setCourse] = useState<CourseCode | null>(null);
@@ -11,7 +10,8 @@ export function FreeFlashcards() {
 
   const cards = course ? FREE_FLASHCARDS[course] : [];
   const card = cards[idx];
-  const finished = course && idx >= cards.length;
+  const finished = course !== null && idx >= cards.length;
+  const perCourse = FREE_FLASHCARDS[FREE_COURSES[0].code].length;
 
   const reset = () => { setCourse(null); setIdx(0); setFlipped(false); };
   const pick = (c: CourseCode) => { setCourse(c); setIdx(0); setFlipped(false); };
@@ -19,111 +19,82 @@ export function FreeFlashcards() {
   const prev = () => { if (idx > 0) { setFlipped(false); setIdx((i) => i - 1); } };
 
   return (
-    <div id="free-flashcards" className="relative mt-6 sm:mt-10">
-      <div className="mx-auto max-w-4xl">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.6 }}
-          className="text-center"
-        >
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-300">No login required</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-5xl">
-            🃏 Free <span className="sm-gradient-text">Flashcards</span>
-          </h2>
-          <p className="mt-4 text-base text-slate-300">5 cards per course. Tap to flip.</p>
-        </motion.div>
+    <div className="mx-auto max-w-3xl">
+      <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Flashcards</h2>
+      <p className="mt-2 text-sm text-slate-300 sm:text-base">
+        {perCourse} cards per course. Read the question, say your answer, then flip the card to check.
+      </p>
 
-        <AnimatePresence mode="wait">
-          {!course && (
-            <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-              {FREE_COURSES.map((c) => (
-                <button
-                  key={c.code}
-                  onClick={() => pick(c.code)}
-                  className="sm-card group relative overflow-hidden rounded-2xl p-5 text-left transition hover:-translate-y-1"
-                >
-                  <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${c.color} opacity-20 blur-2xl`} />
-                  <div className={`inline-block rounded-lg bg-gradient-to-r ${c.color} px-3 py-1 text-xs font-bold text-white`}>{c.code}</div>
-                  <h3 className="mt-3 text-base font-semibold text-white">{c.name}</h3>
-                  <p className="mt-3 text-xs font-semibold text-violet-300">5 free cards →</p>
-                </button>
-              ))}
-            </motion.div>
-          )}
+      {!course && (
+        <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+          {FREE_COURSES.map((c) => (
+            <li key={c.code}>
+              <button onClick={() => pick(c.code)} className="sm-card block h-full w-full rounded-lg p-4 text-left hover:border-white/25">
+                <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">{c.code}</span>
+                <span className="mt-1 block text-base font-semibold text-white">{c.name}</span>
+                <span className="mt-2 block text-sm text-slate-300">{perCourse} cards</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
 
-          {course && !finished && card && (
-            <motion.div key={`f-${course}-${idx}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-10">
-              <div className="mb-4 flex items-center justify-between text-xs font-semibold text-slate-400">
-                <span>{course} · Card {idx + 1} of {cards.length}</span>
-                <button onClick={reset} className="text-slate-400 hover:text-white">Exit</button>
-              </div>
+      {course && !finished && card && (
+        <div className="mt-6">
+          <div className="flex items-center justify-between text-sm text-slate-300">
+            <span>{course}: card {idx + 1} of {cards.length}</span>
+            <button onClick={reset} className="underline underline-offset-4 hover:text-white">Exit</button>
+          </div>
+          <div
+            className="mt-3 h-1.5 w-full overflow-hidden rounded bg-white/10"
+            role="progressbar"
+            aria-label="Cards completed"
+            aria-valuemin={0}
+            aria-valuemax={cards.length}
+            aria-valuenow={idx}
+          >
+            <div className="h-full bg-emerald-400 transition-all" style={{ width: `${(idx / cards.length) * 100}%` }} />
+          </div>
 
-              <div
-                onClick={() => setFlipped((f) => !f)}
-                className="relative mx-auto h-64 max-w-xl cursor-pointer select-none sm:h-80"
-                style={{ perspective: "1200px" }}
-              >
-                <motion.div
-                  className="relative h-full w-full"
-                  style={{ transformStyle: "preserve-3d" }}
-                  animate={{ rotateY: flipped ? 180 : 0 }}
-                  transition={{ duration: 0.6 }}
-                >
-                  <div
-                    className="sm-card absolute inset-0 flex flex-col items-center justify-center rounded-3xl p-8 text-center"
-                    style={{ backfaceVisibility: "hidden" }}
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-wider text-violet-300">Question</p>
-                    <p className="mt-4 text-xl font-bold text-white sm:text-2xl">{card.front}</p>
-                    <p className="mt-6 text-xs text-slate-500">Tap to reveal answer</p>
-                  </div>
-                  <div
-                    className="sm-card absolute inset-0 flex flex-col items-center justify-center rounded-3xl p-8 text-center"
-                    style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)", background: "linear-gradient(135deg, rgba(79,70,229,0.15), rgba(124,58,237,0.15))" }}
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-wider text-violet-300">Answer</p>
-                    <p className="mt-4 text-base text-slate-100 sm:text-lg">{card.back}</p>
-                  </div>
-                </motion.div>
-              </div>
+          <button
+            onClick={() => setFlipped((f) => !f)}
+            aria-pressed={flipped}
+            className="sm-card mt-5 flex min-h-[16rem] w-full flex-col items-center justify-center rounded-lg p-6 text-center sm:min-h-[20rem]"
+          >
+            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-300">{flipped ? "Answer" : "Question"}</span>
+            <span className={`mt-4 ${flipped ? "text-base text-slate-100 sm:text-lg" : "text-xl font-semibold text-white sm:text-2xl"}`}>
+              {flipped ? card.back : card.front}
+            </span>
+            <span className="mt-6 text-sm text-slate-400">{flipped ? "Select to see the question again" : "Select to reveal the answer"}</span>
+          </button>
 
-              <div className="mx-auto mt-5 flex max-w-xl items-center justify-between gap-2">
-                <button onClick={prev} disabled={idx === 0} className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10 disabled:opacity-40 sm:px-5 sm:text-sm">← Prev</button>
-                <span className="hidden text-xs text-slate-500 sm:inline">{flipped ? "Showing answer" : "Showing question"}</span>
-                <button onClick={next} className="sm-btn-primary rounded-full px-3 py-2 text-xs font-bold text-white sm:px-5 sm:text-sm">
-                  {idx + 1 === cards.length ? "Finish →" : "Next →"}
-                </button>
-              </div>
-            </motion.div>
-          )}
+          <div className="mt-4 flex items-center justify-between gap-2">
+            <button onClick={prev} disabled={idx === 0} className="sm-btn-ghost inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold text-slate-100 disabled:opacity-40">
+              <ArrowLeft size={16} aria-hidden /> Previous
+            </button>
+            <button onClick={next} className="sm-btn-primary inline-flex items-center gap-1.5 rounded-lg px-4 py-2.5 text-sm font-semibold text-white">
+              {idx + 1 === cards.length ? "Finish" : "Next card"} <ArrowRight size={16} aria-hidden />
+            </button>
+          </div>
+        </div>
+      )}
 
-          {finished && (
-            <motion.div key="done" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="sm-card mt-8 rounded-3xl p-5 text-center sm:mt-10 sm:p-8">
-              <div className="text-6xl">🃏</div>
-              <h3 className="mt-4 text-2xl font-bold text-white sm:text-3xl">
-                You finished all <span className="sm-gradient-text">{cards.length} cards</span>
-              </h3>
-              <div className="mt-6 rounded-2xl border border-violet-400/30 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 p-6">
-                <p className="text-base font-semibold text-white">
-                  Want up to 50 flashcards per topic with full caching and offline access?
-                </p>
-                <p className="mt-1 text-sm text-slate-300">Download ScholarMate 📱</p>
-                <a
-                  href={DOWNLOAD_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="sm-btn-primary mt-4 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white"
-                >
-                  ⬇ Download ScholarMate
-                </a>
-              </div>
-              <button onClick={reset} className="mt-4 text-sm text-slate-400 hover:text-white">← Try another course</button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+      {finished && (
+        <div className="sm-card mt-6 rounded-lg p-4 sm:p-6">
+          <h3 className="text-2xl font-bold text-white">You went through all {cards.length} cards</h3>
+          <p className="mt-1 text-sm text-slate-300">{course}</p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button onClick={() => course && pick(course)} className="sm-btn-primary rounded-lg px-5 py-2.5 text-sm font-semibold text-white">Go through them again</button>
+            <button onClick={reset} className="sm-btn-ghost rounded-lg px-5 py-2.5 text-sm font-semibold text-slate-100">Choose another course</button>
+          </div>
+          <div className="mt-6 border-t border-white/10 pt-5">
+            <p className="text-sm text-slate-300">In the app you can generate 1 to 50 flashcards for any topic.</p>
+            <a href={DOWNLOAD_URL} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200">
+              Download ScholarMate
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

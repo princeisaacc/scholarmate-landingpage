@@ -1,60 +1,57 @@
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { Check, X } from "lucide-react";
 import { FREE_COURSES, FREE_QUIZZES, type CourseCode } from "./free-content-data";
+import { DOWNLOAD_URL } from "@/lib/site";
 
-const DOWNLOAD_URL = "https://dub.sh/scholarmate-app";
-const TAKEN_KEY = "scholarmate:freeQuizTaken";
+const SCORES_KEY = "scholarmate:freeQuizScores";
 
-function loadTaken(): Record<string, boolean> {
-  try { return JSON.parse(localStorage.getItem(TAKEN_KEY) || "{}"); } catch { return {}; }
+type Scores = Record<string, { score: number; total: number }>;
+
+function loadScores(): Scores {
+  try { return JSON.parse(localStorage.getItem(SCORES_KEY) || "{}"); } catch { return {}; }
 }
-function markTaken(code: string) {
-  const t = loadTaken();
-  t[code] = true;
-  try { localStorage.setItem(TAKEN_KEY, JSON.stringify(t)); } catch {}
+function saveScore(code: string, score: number, total: number) {
+  const all = loadScores();
+  all[code] = { score, total };
+  try { localStorage.setItem(SCORES_KEY, JSON.stringify(all)); } catch {}
 }
 
 export function FreeQuiz() {
   const [course, setCourse] = useState<CourseCode | null>(null);
-  const [taken, setTaken] = useState<Record<string, boolean>>({});
+  const [scores, setScores] = useState<Scores>({});
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
+  const [checked, setChecked] = useState(false);
   const [answers, setAnswers] = useState<number[]>([]);
   const [done, setDone] = useState(false);
 
-  useEffect(() => { setTaken(loadTaken()); }, []);
+  useEffect(() => { setScores(loadScores()); }, []);
 
   const questions = course ? FREE_QUIZZES[course] : [];
   const current = questions[idx];
   const score = answers.reduce((a, ans, i) => a + (ans === questions[i].answer ? 1 : 0), 0);
+  const perCourse = FREE_QUIZZES[FREE_COURSES[0].code].length;
 
   const reset = () => {
-    setCourse(null);
-    setIdx(0);
-    setSelected(null);
-    setAnswers([]);
-    setDone(false);
+    setCourse(null); setIdx(0); setSelected(null); setChecked(false); setAnswers([]); setDone(false);
+  };
+  const start = (c: CourseCode) => {
+    setCourse(c); setIdx(0); setSelected(null); setChecked(false); setAnswers([]); setDone(false);
   };
 
-  const pickCourse = (c: CourseCode) => {
-    if (taken[c]) return;
-    setCourse(c);
-    setIdx(0);
-    setSelected(null);
-    setAnswers([]);
-    setDone(false);
-  };
-
-  const submitAnswer = () => {
+  const check = () => { if (selected !== null) setChecked(true); };
+  const next = () => {
     if (selected === null) return;
-    const next = [...answers, selected];
-    setAnswers(next);
+    const all = [...answers, selected];
+    setAnswers(all);
     setSelected(null);
+    setChecked(false);
     if (idx + 1 >= questions.length) {
       setDone(true);
       if (course) {
-        markTaken(course);
-        setTaken(loadTaken());
+        const finalScore = all.reduce((a, ans, i) => a + (ans === questions[i].answer ? 1 : 0), 0);
+        saveScore(course, finalScore, questions.length);
+        setScores(loadScores());
       }
     } else {
       setIdx(idx + 1);
@@ -62,125 +59,123 @@ export function FreeQuiz() {
   };
 
   return (
-    <div id="free-quiz" className="relative mt-6 sm:mt-10">
-      <div className="mx-auto max-w-4xl">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.6 }}
-          className="text-center"
-        >
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-300">No login required</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-5xl">
-            📝 Free <span className="sm-gradient-text">Quiz</span>
-          </h2>
-          <p className="mt-4 text-base text-slate-300">Pick a course and try 5 free questions. AI-powered, instant feedback.</p>
-        </motion.div>
+    <div className="mx-auto max-w-3xl">
+      <h2 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">Practice quiz</h2>
+      <p className="mt-2 text-sm text-slate-300 sm:text-base">
+        Pick a course and answer {perCourse} questions. You see the correct answer and an explanation after each one. You can retake any course.
+      </p>
 
-        <AnimatePresence mode="wait">
-          {!course && (
-            <motion.div key="select" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-8 grid gap-3 sm:mt-10 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-              {FREE_COURSES.map((c) => {
-                const used = taken[c.code];
-                return (
-                  <button
-                    key={c.code}
-                    onClick={() => pickCourse(c.code)}
-                    disabled={used}
-                    className="sm-card group relative overflow-hidden rounded-2xl p-5 text-left transition hover:-translate-y-1 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    <div className={`absolute -right-10 -top-10 h-32 w-32 rounded-full bg-gradient-to-br ${c.color} opacity-20 blur-2xl`} />
-                    <div className={`inline-block rounded-lg bg-gradient-to-r ${c.color} px-3 py-1 text-xs font-bold text-white`}>{c.code}</div>
-                    <h3 className="mt-3 text-base font-semibold text-white">{c.name}</h3>
-                    <p className="mt-3 text-xs font-semibold text-violet-300">
-                      {used ? "✓ Taken — download to retake" : "Start 5 questions →"}
-                    </p>
-                  </button>
-                );
-              })}
-            </motion.div>
-          )}
+      {!course && (
+        <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+          {FREE_COURSES.map((c) => {
+            const s = scores[c.code];
+            return (
+              <li key={c.code}>
+                <button onClick={() => start(c.code)} className="sm-card block h-full w-full rounded-lg p-4 text-left hover:border-white/25">
+                  <span className="text-xs font-bold uppercase tracking-wider text-emerald-300">{c.code}</span>
+                  <span className="mt-1 block text-base font-semibold text-white">{c.name}</span>
+                  <span className="mt-2 block text-sm text-slate-300">
+                    {s ? `Last score ${s.score} of ${s.total}. Take it again` : `Start ${perCourse} questions`}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
-          {course && !done && current && (
-            <motion.div key={`q-${course}-${idx}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="sm-card mt-8 rounded-3xl p-4 sm:mt-10 sm:p-8">
-              <div className="mb-4 flex items-center justify-between text-xs font-semibold text-slate-400">
-                <span>{course} · Question {idx + 1} of {questions.length}</span>
-                <button onClick={reset} className="text-slate-400 hover:text-white">Exit</button>
-              </div>
-              <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-                <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all" style={{ width: `${((idx) / questions.length) * 100}%` }} />
-              </div>
-              <h3 className="text-lg font-bold text-white sm:text-xl">{current.q}</h3>
-              <div className="mt-5 space-y-2">
-                {current.options.map((opt, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setSelected(i)}
-                    className={`w-full rounded-xl border px-4 py-3 text-left text-sm transition ${
-                      selected === i
-                        ? "border-violet-400/60 bg-violet-500/10 text-white"
-                        : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10"
-                    }`}
-                  >
-                    <span className="mr-2 font-bold text-violet-300">{String.fromCharCode(65 + i)}.</span>{opt}
-                  </button>
-                ))}
-              </div>
-              <button
-                onClick={submitAnswer}
-                disabled={selected === null}
-                className="sm-btn-primary mt-6 w-full rounded-xl px-4 py-3 text-sm font-bold text-white disabled:opacity-50"
-              >
-                {idx + 1 === questions.length ? "Finish quiz" : "Next question →"}
-              </button>
-            </motion.div>
-          )}
+      {course && !done && current && (
+        <div className="sm-card mt-6 rounded-lg p-4 sm:p-6">
+          <div className="flex items-center justify-between text-sm text-slate-300">
+            <span>{course}: question {idx + 1} of {questions.length}</span>
+            <button onClick={reset} className="underline underline-offset-4 hover:text-white">Exit quiz</button>
+          </div>
+          <div
+            className="mt-3 h-1.5 w-full overflow-hidden rounded bg-white/10"
+            role="progressbar"
+            aria-label="Quiz progress"
+            aria-valuemin={0}
+            aria-valuemax={questions.length}
+            aria-valuenow={idx + (checked ? 1 : 0)}
+          >
+            <div className="h-full bg-emerald-400 transition-all" style={{ width: `${((idx + (checked ? 1 : 0)) / questions.length) * 100}%` }} />
+          </div>
 
-          {course && done && (
-            <motion.div key="done" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="sm-card mt-8 rounded-3xl p-5 text-center sm:mt-10 sm:p-8">
-              <div className="text-6xl">{score >= 4 ? "🏆" : score >= 2 ? "💪" : "📚"}</div>
-              <h3 className="mt-4 text-2xl font-bold text-white sm:text-3xl">
-                You scored <span className="sm-gradient-text">{score}/{questions.length}</span>
-              </h3>
-              <p className="mt-2 text-slate-400">{course}</p>
-
-              <div className="mt-6 space-y-3 text-left">
-                {questions.map((q, i) => {
-                  const correct = answers[i] === q.answer;
-                  return (
-                    <div key={i} className={`rounded-xl border p-4 ${correct ? "border-emerald-400/30 bg-emerald-500/5" : "border-rose-400/30 bg-rose-500/5"}`}>
-                      <p className="text-sm font-semibold text-white">{i + 1}. {q.q}</p>
-                      <p className="mt-1 text-xs text-slate-400">
-                        Your answer: <span className={correct ? "text-emerald-300" : "text-rose-300"}>{q.options[answers[i]]}</span>
-                        {!correct && <> · Correct: <span className="text-emerald-300">{q.options[q.answer]}</span></>}
-                      </p>
-                      <p className="mt-1 text-xs italic text-slate-500">{q.explain}</p>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="mt-8 rounded-2xl border border-violet-400/30 bg-gradient-to-br from-indigo-500/10 to-violet-500/10 p-6">
-                <p className="text-base font-semibold text-white">
-                  Want more questions with full difficulty levels, timers and score tracking?
-                </p>
-                <p className="mt-1 text-sm text-slate-300">Download ScholarMate 📱</p>
-                <a
-                  href={DOWNLOAD_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="sm-btn-primary mt-4 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-bold text-white"
+          <h3 className="mt-5 text-lg font-semibold text-white sm:text-xl">{current.q}</h3>
+          <div className="mt-4 space-y-2" role="group" aria-label="Answer options">
+            {current.options.map((opt, i) => {
+              const isCorrect = i === current.answer;
+              const isPicked = selected === i;
+              let style = "border-white/15 text-slate-200 hover:bg-white/5";
+              if (!checked && isPicked) style = "border-emerald-400 bg-emerald-500/10 text-white";
+              if (checked && isCorrect) style = "border-emerald-400/70 bg-emerald-500/10 text-white";
+              if (checked && isPicked && !isCorrect) style = "border-rose-400/70 bg-rose-500/10 text-white";
+              return (
+                <button
+                  key={i}
+                  onClick={() => !checked && setSelected(i)}
+                  aria-pressed={isPicked}
+                  disabled={checked}
+                  className={`flex w-full items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left text-sm ${style}`}
                 >
-                  ⬇ Download ScholarMate
-                </a>
-              </div>
+                  <span><span className="mr-2 font-bold text-emerald-300">{String.fromCharCode(65 + i)}.</span>{opt}</span>
+                  {checked && isCorrect && <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-emerald-300"><Check size={14} aria-hidden /> Correct</span>}
+                  {checked && isPicked && !isCorrect && <span className="flex shrink-0 items-center gap-1 text-xs font-semibold text-rose-300"><X size={14} aria-hidden /> Your answer</span>}
+                </button>
+              );
+            })}
+          </div>
 
-              <button onClick={reset} className="mt-4 text-sm text-slate-400 hover:text-white">← Try another course</button>
-            </motion.div>
+          <div aria-live="polite">
+            {checked && <p className="mt-4 rounded-lg border border-white/10 p-3 text-sm text-slate-200">{current.explain}</p>}
+          </div>
+
+          {!checked ? (
+            <button onClick={check} disabled={selected === null} className="sm-btn-primary mt-5 w-full rounded-lg px-4 py-3 text-sm font-semibold text-white disabled:opacity-50">
+              Check answer
+            </button>
+          ) : (
+            <button onClick={next} className="sm-btn-primary mt-5 w-full rounded-lg px-4 py-3 text-sm font-semibold text-white">
+              {idx + 1 === questions.length ? "See my score" : "Next question"}
+            </button>
           )}
-        </AnimatePresence>
-      </div>
+        </div>
+      )}
+
+      {course && done && (
+        <div className="sm-card mt-6 rounded-lg p-4 sm:p-6">
+          <h3 className="text-2xl font-bold text-white">You scored {score} out of {questions.length}</h3>
+          <p className="mt-1 text-sm text-slate-300">{course}. Your score is saved on this device only.</p>
+
+          <ul className="mt-5 space-y-3">
+            {questions.map((q, i) => {
+              const correct = answers[i] === q.answer;
+              return (
+                <li key={i} className="rounded-lg border border-white/10 p-4">
+                  <p className="text-sm font-semibold text-white">{i + 1}. {q.q}</p>
+                  <p className="mt-1 text-sm text-slate-300">
+                    <span className={correct ? "font-semibold text-emerald-300" : "font-semibold text-rose-300"}>{correct ? "Correct" : "Incorrect"}.</span>{" "}
+                    You chose {q.options[answers[i]]}.{!correct && <> The answer is {q.options[q.answer]}.</>}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-400">{q.explain}</p>
+                </li>
+              );
+            })}
+          </ul>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            <button onClick={() => course && start(course)} className="sm-btn-primary rounded-lg px-5 py-2.5 text-sm font-semibold text-white">Retake {course}</button>
+            <button onClick={reset} className="sm-btn-ghost rounded-lg px-5 py-2.5 text-sm font-semibold text-slate-100">Choose another course</button>
+          </div>
+
+          <div className="mt-6 border-t border-white/10 pt-5">
+            <p className="text-sm text-slate-300">The app also has practice quizzes and a Final Boss quiz.</p>
+            <a href={DOWNLOAD_URL} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm font-semibold text-emerald-300 underline underline-offset-4 hover:text-emerald-200">
+              Download ScholarMate
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

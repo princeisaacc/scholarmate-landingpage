@@ -1,73 +1,64 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
+import { Calculator, Layers, ListChecks } from "lucide-react";
 import { CgpaCalculator } from "./cgpa-calculator";
 import { FreeQuiz } from "./free-quiz";
 import { FreeFlashcards } from "./free-flashcards";
 import { FREE_COURSES } from "./free-content-data";
+import { TRY_TAB_KEY } from "@/lib/site";
 
 type Tab = "cgpa" | "quiz" | "flashcards";
 
-const TABS: { id: Tab; label: string; emoji: string }[] = [
-  { id: "cgpa", label: "CGPA", emoji: "🧮" },
-  { id: "quiz", label: "Quiz", emoji: "📝" },
-  { id: "flashcards", label: "Flashcards", emoji: "🃏" },
+const TABS: { id: Tab; label: string; icon: typeof Calculator }[] = [
+  { id: "cgpa", label: "CGPA", icon: Calculator },
+  { id: "quiz", label: "Quiz", icon: ListChecks },
+  { id: "flashcards", label: "Flashcards", icon: Layers },
 ];
 
+function initialTab(): Tab {
+  try {
+    const saved = localStorage.getItem(TRY_TAB_KEY);
+    if (saved === "cgpa" || saved === "quiz" || saved === "flashcards") return saved;
+  } catch {}
+  return "cgpa";
+}
+
 export function TryItFreeTabs() {
-  const [tab, setTab] = useState<Tab>("cgpa");
+  const [tab, setTab] = useState<Tab>(initialTab);
+
+  useEffect(() => {
+    try { localStorage.setItem(TRY_TAB_KEY, tab); } catch {}
+  }, [tab]);
 
   return (
-    <section id="try-it-free" className="relative px-4 py-14 sm:px-8 sm:py-20 md:py-24">
-      <div className="mx-auto max-w-6xl">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.2 }}
-          transition={{ duration: 0.6 }}
-          className="mx-auto max-w-3xl text-center"
-        >
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-violet-300">No login required</p>
-          <h2 className="mt-3 text-3xl font-bold tracking-tight text-white sm:text-5xl">
-            Try It <span className="sm-gradient-text">Free</span>
-          </h2>
-          <p className="mt-5 text-base text-slate-300 sm:text-lg">
-            Try before you download — no login, no stress. Just a taste of what's waiting for you in the app.
+    <section className="px-4 py-12 sm:px-8 sm:py-16">
+      <div className="mx-auto max-w-5xl">
+        <div className="mx-auto max-w-3xl">
+          <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">Try ScholarMate free</h1>
+          <p className="mt-3 text-base text-slate-300">
+            Three tools, no account needed. The quiz and flashcards cover {FREE_COURSES.length} courses: {FREE_COURSES.map((c) => c.code).join(", ")}.
           </p>
-        </motion.div>
 
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-1.5 sm:gap-2">
-          <span className="w-full text-center text-[10px] font-semibold uppercase tracking-wider text-slate-400 sm:w-auto sm:text-xs">7 courses covered:</span>
-          {FREE_COURSES.map((c) => (
-            <span
-              key={c.code}
-              className={`rounded-full bg-gradient-to-r ${c.color} px-2.5 py-1 text-[10px] font-bold text-white shadow-sm sm:px-3 sm:text-xs`}
-              title={c.name}
-            >
-              {c.code}
-            </span>
-          ))}
-        </div>
-
-        <div className="mt-8 flex justify-center sm:mt-10">
-          <div className="inline-flex w-full max-w-md rounded-full border border-white/10 bg-white/5 p-1 backdrop-blur-sm sm:w-auto sm:p-1.5">
+          <div role="tablist" aria-label="Free tools" className="mt-8 flex gap-2 border-b border-white/10">
             {TABS.map((t) => (
               <button
                 key={t.id}
+                role="tab"
+                id={`tool-tab-${t.id}`}
+                aria-selected={tab === t.id}
+                aria-controls="tool-panel"
                 onClick={() => setTab(t.id)}
-                className={`flex-1 rounded-full px-3 py-2 text-xs font-semibold transition sm:flex-none sm:px-6 sm:text-sm ${
-                  tab === t.id
-                    ? "bg-gradient-to-r from-indigo-500 to-violet-500 text-white shadow-lg"
-                    : "text-slate-300 hover:text-white"
+                className={`-mb-px inline-flex items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold ${
+                  tab === t.id ? "border-emerald-400 text-white" : "border-transparent text-slate-300 hover:text-white"
                 }`}
               >
-                <span className="mr-1 sm:mr-1.5">{t.emoji}</span>
+                <t.icon size={16} aria-hidden />
                 {t.label}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="mt-4">
+        <div id="tool-panel" role="tabpanel" aria-labelledby={`tool-tab-${tab}`} className="mt-8">
           {tab === "cgpa" && <CgpaCalculator />}
           {tab === "quiz" && <FreeQuiz />}
           {tab === "flashcards" && <FreeFlashcards />}

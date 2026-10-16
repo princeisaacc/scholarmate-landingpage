@@ -1,11 +1,11 @@
 export const FREE_COURSES = [
-  { code: "ACC 102", name: "Intro to Financial Accounting II", color: "from-indigo-500 to-violet-500" },
-  { code: "SOC 106", name: "Intro to Sociology II", color: "from-pink-500 to-rose-500" },
-  { code: "AMS 102", name: "Basic Math / Statistics", color: "from-cyan-500 to-blue-500" },
-  { code: "AMS 104", name: "Project Management", color: "from-amber-500 to-orange-500" },
-  { code: "ECO 102", name: "Intro to Economics II", color: "from-emerald-500 to-teal-500" },
-  { code: "PSY 136", name: "Intro to Psychology", color: "from-fuchsia-500 to-purple-500" },
-  { code: "GST 112", name: "Nigeria People and Culture", color: "from-lime-500 to-green-500" },
+  { code: "ACC 102", name: "Intro to Financial Accounting II" },
+  { code: "SOC 106", name: "Intro to Sociology II" },
+  { code: "AMS 102", name: "Basic Math / Statistics" },
+  { code: "AMS 104", name: "Project Management" },
+  { code: "ECO 102", name: "Intro to Economics II" },
+  { code: "PSY 136", name: "Intro to Psychology" },
+  { code: "GST 112", name: "Nigeria People and Culture" },
 ] as const;
 
 export type CourseCode = (typeof FREE_COURSES)[number]["code"];
@@ -25,7 +25,7 @@ export const FREE_QUIZZES: Record<CourseCode, QuizQ[]> = {
     { q: "Which sociologist coined the term 'sociology'?", options: ["Karl Marx", "Auguste Comte", "Max Weber", "Émile Durkheim"], answer: 1, explain: "Auguste Comte coined the term in the 19th century." },
     { q: "A 'norm' in sociology refers to:", options: ["A statistical average", "Shared rules guiding behaviour", "An economic measure", "A religious doctrine"], answer: 1, explain: "Norms are shared expectations and rules that guide behaviour." },
     { q: "Primary socialisation typically occurs in the:", options: ["Workplace", "Family", "University", "Media"], answer: 1, explain: "The family is the primary agent of early socialisation." },
-    { q: "Which is an example of a secondary group?", options: ["A close-knit family", "A study group at a lecture", "Childhood best friends", "Identical twins"], answer: 1, explain: "Secondary groups are larger, impersonal, and goal-oriented — like a study group." },
+    { q: "Which is an example of a secondary group?", options: ["A close-knit family", "A study group at a lecture", "Childhood best friends", "Identical twins"], answer: 1, explain: "Secondary groups are larger, impersonal, and goal-oriented, like a study group." },
   ],
   "AMS 102": [
     { q: "The mean of 4, 8, 10, 12, 16 is:", options: ["8", "10", "12", "9"], answer: 1, explain: "Sum = 50, count = 5, mean = 10." },
@@ -94,7 +94,7 @@ export const FREE_FLASHCARDS: Record<CourseCode, { front: string; back: string }
     { front: "What is scope creep?", back: "The uncontrolled expansion of a project's scope without adjustments to time, cost or resources." },
   ],
   "ECO 102": [
-    { front: "Define microeconomics.", back: "The study of individual economic agents — consumers, firms and markets." },
+    { front: "Define microeconomics.", back: "The study of individual economic agents: consumers, firms and markets." },
     { front: "What is elasticity of demand?", back: "The responsiveness of quantity demanded to a change in price." },
     { front: "Define equilibrium price.", back: "The price at which quantity demanded equals quantity supplied." },
     { front: "What is fiscal policy?", back: "Government use of taxation and spending to influence the economy." },
@@ -102,7 +102,7 @@ export const FREE_FLASHCARDS: Record<CourseCode, { front: string; back: string }
   ],
   "PSY 136": [
     { front: "Define psychology.", back: "The scientific study of behaviour and mental processes." },
-    { front: "What is operant conditioning?", back: "Learning where behaviour is shaped by consequences (reinforcement and punishment) — Skinner." },
+    { front: "What is operant conditioning?", back: "Learning where behaviour is shaped by consequences (reinforcement and punishment). Associated with Skinner." },
     { front: "Name Freud's three parts of personality.", back: "Id (instincts), Ego (reality), Superego (morality)." },
     { front: "What is cognitive dissonance?", back: "Mental discomfort from holding two conflicting beliefs or attitudes (Festinger)." },
     { front: "Define perception.", back: "The process of organising and interpreting sensory information to give it meaning." },

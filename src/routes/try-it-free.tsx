@@ -1,43 +1,40 @@
 import { Link } from "@tanstack/react-router";
-import aceIcon from "@/assets/app/ace-icon.png";
+import aceIcon from "@/assets/app/ace-icon.webp";
 import { TryItFreeTabs } from "@/components/try-it-free-tabs";
+import { usePageTitle } from "@/hooks/use-page-title";
 
 export function TryItFreeComponent() {
+  usePageTitle("Try it free");
   return (
     <div className="min-h-screen bg-[#0B1020] text-slate-100">
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 border-b border-white/5 bg-[#0B1020]/85 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B1020]">
+        <nav aria-label="Main" className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
           <Link to="/" className="flex items-center gap-2">
-            <img src={aceIcon} alt="" className="h-7 w-7 rounded-lg object-contain sm:h-8 sm:w-8" />
-            <span className="text-[15px] font-semibold tracking-tight text-white">ScholarMate</span>
+            <img src={aceIcon} width={32} height={32} alt="" className="h-8 w-8 rounded-md object-contain" />
+            <span className="text-base font-semibold tracking-tight text-white">ScholarMate</span>
           </Link>
-          <Link
-            to="/"
-            className="rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-semibold text-slate-200 hover:bg-white/10 sm:text-sm"
-          >
-            ← Back home
-          </Link>
-        </div>
-      </nav>
+          <Link to="/" className="sm-btn-ghost rounded-lg px-4 py-2 text-sm font-semibold text-slate-100">Back to home</Link>
+        </nav>
+      </header>
 
-      {/* Content */}
-      <TryItFreeTabs />
+      <main>
+        <TryItFreeTabs />
 
-      {/* Bottom CTA */}
-      <section className="border-t border-white/5 py-16 text-center">
-        <p className="text-sm text-slate-400 mb-4">Ready for the full experience?</p>
-        <Link
-          to="/"
-          className="inline-flex items-center justify-center rounded-full bg-indigo-600 px-8 py-3 text-[15px] font-semibold text-white transition hover:bg-indigo-500"
-        >
-          Download ScholarMate →
-        </Link>
-      </section>
+        <section className="border-t border-white/10 px-4 py-12 sm:px-8">
+          <div className="mx-auto max-w-3xl">
+            <h2 className="text-xl font-semibold text-white">Want the rest?</h2>
+            <p className="mt-2 text-sm text-slate-300 sm:text-base">
+              The app adds the study planner, timer, AI notes, image generation, and uploads from your own notes, PDFs and videos.
+            </p>
+            <Link to="/" hash="download" className="sm-btn-primary mt-4 inline-flex items-center rounded-lg px-5 py-2.5 text-sm font-semibold text-white">
+              See what the app adds
+            </Link>
+          </div>
+        </section>
+      </main>
 
-      {/* Footer */}
-      <footer className="border-t border-white/5 bg-[#0B1020] px-4 py-8 text-center">
-        <p className="text-xs text-slate-500">© 2026 Prince AI Studio · All rights reserved.</p>
+      <footer className="border-t border-white/10 px-4 py-8 text-center text-sm text-slate-400">
+        © 2026 Prince AI Studio · <Link to="/privacy" className="hover:text-white">Privacy</Link> · <Link to="/terms" className="hover:text-white">Terms</Link>
       </footer>
     </div>
   );

@@ -1,20 +1,25 @@
 import { Link } from "@tanstack/react-router";
-import aceIcon from "@/assets/app/ace-icon.png";
+import aceIcon from "@/assets/app/ace-icon.webp";
+import { usePageTitle } from "@/hooks/use-page-title";
+import { CONTACT_EMAIL, INSTAGRAM_HANDLE, INSTAGRAM_URL } from "@/lib/site";
 
 export function PrivacyComponent() {
+  usePageTitle("Privacy Policy");
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-100">
-      <nav className="border-b border-white/10 bg-[#0F172A]/80 backdrop-blur-xl sticky top-0 z-50">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0F172A]">
+        <nav aria-label="Main">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3 sm:px-8">
           <Link to="/" className="flex items-center gap-2">
             <img src={aceIcon} alt="" className="h-8 w-8 rounded-lg object-contain" />
             <span className="font-bold text-white">ScholarMate</span>
           </Link>
-          <Link to="/" className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/10">
-            ← Home
+          <Link to="/" className="sm-btn-ghost rounded-lg px-3 py-2 text-xs font-semibold text-slate-100">
+            Back to home
           </Link>
         </div>
-      </nav>
+        </nav>
+      </header>
 
       <main className="mx-auto max-w-3xl px-4 py-16 sm:px-8">
         <h1 className="text-4xl font-extrabold tracking-tight text-white">Privacy Policy</h1>
@@ -24,16 +29,16 @@ export function PrivacyComponent() {
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">1. Who We Are</h2>
-            <p>ScholarMate is an AI-powered study companion app designed for university students. It is developed and maintained by <span className="text-white font-medium">Prince AI Studio</span>. If you have any questions about this policy, contact us at <a href="mailto:princeaistudio@gmail.com" className="text-indigo-400 hover:underline">princeaistudio@gmail.com</a>.</p>
+            <p>ScholarMate is an AI-powered study companion app designed for university students. It is developed and maintained by <span className="text-white font-medium">Prince AI Studio</span>. If you have any questions about this policy, contact us at <a href={`mailto:${CONTACT_EMAIL}`} className="text-emerald-300 underline underline-offset-2">{CONTACT_EMAIL}</a>.</p>
           </section>
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">2. Information We Collect</h2>
             <p>We collect only what is necessary to provide the service:</p>
             <ul className="mt-3 space-y-2 list-disc list-inside text-slate-400">
-              <li><span className="text-slate-300">Account information</span> — your name and email address when you sign up or sign in with Google.</li>
-              <li><span className="text-slate-300">Usage data</span> — basic app interactions to improve features (no keylogging or sensitive content capture).</li>
-              <li><span className="text-slate-300">Reviews</span> — display name, star rating, and review text you choose to submit publicly.</li>
+              <li><span className="text-slate-300">Account information</span>: your name and email address when you sign up or sign in with Google.</li>
+              <li><span className="text-slate-300">Usage data</span>: basic app interactions to improve features (no keylogging or sensitive content capture).</li>
+              <li><span className="text-slate-300">Reviews</span>: display name, star rating, and review text you choose to submit publicly.</li>
             </ul>
           </section>
 
@@ -45,7 +50,7 @@ export function PrivacyComponent() {
               <li>To display your public reviews on the ScholarMate website.</li>
               <li>To improve the app and fix bugs.</li>
             </ul>
-            <p className="mt-4 text-indigo-300 font-medium">We do not sell, rent, or share your personal data with third parties for marketing purposes. Ever.</p>
+            <p className="mt-4 text-emerald-300 font-medium">We do not sell, rent, or share your personal data with third parties for marketing purposes. Ever.</p>
           </section>
 
           <section>
@@ -67,7 +72,7 @@ export function PrivacyComponent() {
               <li>Request deletion of your account and all associated data.</li>
               <li>Withdraw consent at any time by deleting your account.</li>
             </ul>
-            <p className="mt-4">To exercise any of these rights, email us at <a href="mailto:princeaistudio@gmail.com" className="text-indigo-400 hover:underline">princeaistudio@gmail.com</a>.</p>
+            <p className="mt-4">To exercise any of these rights, email us at <a href={`mailto:${CONTACT_EMAIL}`} className="text-emerald-300 underline underline-offset-2">{CONTACT_EMAIL}</a>.</p>
           </section>
 
           <section>
@@ -87,12 +92,12 @@ export function PrivacyComponent() {
 
           <section>
             <h2 className="text-xl font-bold text-white mb-3">10. Contact</h2>
-            <p>Questions? Reach us at <a href="mailto:princeaistudio@gmail.com" className="text-indigo-400 hover:underline">princeaistudio@gmail.com</a> or on Instagram <a href="https://instagram.com/officialprinceaistudio" target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">@officialprinceaistudio</a>.</p>
+            <p>Questions? Reach us at <a href={`mailto:${CONTACT_EMAIL}`} className="text-emerald-300 underline underline-offset-2">{CONTACT_EMAIL}</a> or on Instagram <a href={INSTAGRAM_URL} target="_blank" rel="noopener noreferrer" className="text-emerald-300 hover:underline">{INSTAGRAM_HANDLE}</a>.</p>
           </section>
         </div>
       </main>
 
-      <footer className="border-t border-white/10 bg-[#060912] px-5 py-8 mt-16 text-center text-sm text-slate-500">
+      <footer className="border-t border-white/10 bg-[#060912] px-5 py-8 mt-16 text-center text-sm text-slate-400">
         © 2026 Prince AI Studio · <Link to="/terms" className="hover:text-white">Terms</Link> · <Link to="/privacy" className="hover:text-white">Privacy</Link>
       </footer>
     </div>

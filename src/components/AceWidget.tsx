@@ -1,152 +1,130 @@
-import { useState, useRef, useEffect } from 'react';
-import owlChest from '@/assets/owl_chest.png';
-import aceSupport from '@/assets/ace_support.png';
-import { useAuth } from '@/hooks/use-auth';
-import {
-  Message, GUEST_LIMIT, loadChatHistory, saveChatHistory, clearChatHistory,
-  getGuestCount, incrementGuestCount, saveMessage, askAce, buildApiMessages
-} from '@/lib/aceChat';
-
-const avatarSrc = aceSupport || owlChest;
+import { useEffect, useRef, useState } from "react";
+import { Maximize2, Send, Trash2, X } from "lucide-react";
+import aceSupport from "@/assets/ace_support.webp";
+import { useAceChat } from "@/hooks/use-ace-chat";
+import { GUEST_LIMIT } from "@/lib/aceChat";
 
 export default function AceWidget() {
-  const { user } = useAuth();
+  const chat = useAceChat();
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(loadChatHistory);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [guestCount, setGuestCount] = useState(getGuestCount);
   const [pathname, setPathname] = useState(window.location.pathname);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const openerRef = useRef<HTMLButtonElement>(null);
 
-  const isSignedIn = !!user;
-  const guestLimitReached = !isSignedIn && guestCount >= GUEST_LIMIT;
-
+  // The widget sits outside the router, so it follows navigation through the History API.
   useEffect(() => {
     const handler = () => setPathname(window.location.pathname);
-    window.addEventListener('popstate', handler);
+    window.addEventListener("popstate", handler);
     const origPush = history.pushState.bind(history);
     const origReplace = history.replaceState.bind(history);
     history.pushState = (...args) => { origPush(...args); handler(); };
     history.replaceState = (...args) => { origReplace(...args); handler(); };
     return () => {
-      window.removeEventListener('popstate', handler);
+      window.removeEventListener("popstate", handler);
       history.pushState = origPush;
       history.replaceState = origReplace;
     };
   }, []);
-  useEffect(() => { if (open) setTimeout(() => inputRef.current?.focus(), 300); }, [open]);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
-  if (pathname === '/support') return null;
+  useEffect(() => { if (open) inputRef.current?.focus(); }, [open]);
+  useEffect(() => { if (open) bottomRef.current?.scrollIntoView({ block: "end" }); }, [chat.messages, chat.loading, open]);
 
-  async function send() {
-    const text = input.trim();
-    if (!text || loading || guestLimitReached) return;
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', text };
-    const next = [...messages, userMsg];
-    setMessages(next);
-    saveChatHistory(next);
-    setInput('');
-    setLoading(true);
-    await saveMessage('user', text, user?.id);
-    if (!isSignedIn) { incrementGuestCount(); setGuestCount(getGuestCount()); }
-    try {
-      const reply = await askAce(buildApiMessages(next));
-      const updated = [...next, { id: Date.now().toString(), role: 'ace' as const, text: reply }];
-      setMessages(updated);
-      saveChatHistory(updated);
-      await saveMessage('ace', reply, user?.id);
-    } catch {
-      const err = "Sorry, I'm having trouble right now. Email us at princeaistudio@gmail.com!";
-      const updated = [...next, { id: Date.now().toString(), role: 'ace' as const, text: err }];
-      setMessages(updated);
-      saveChatHistory(updated);
-    } finally { setLoading(false); }
-  }
+  const close = () => { setOpen(false); openerRef.current?.focus(); };
 
-  function handleClear() { clearChatHistory(); setMessages([{ id: '0', role: 'ace', text: "Hey! 👋 I'm Ace, how can I help you today?" }]); }
-  function handleKey(e: React.KeyboardEvent) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+  if (pathname === "/support") return null;
 
   return (
     <>
-      <button onClick={() => setOpen(true)} aria-label="Chat with Ace"
-        style={{ position: 'fixed', bottom: '24px', right: '24px', width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', border: '2px solid rgba(212,160,23,0.4)', cursor: 'pointer', display: open ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 24px rgba(124,58,237,0.55)', zIndex: 9999, transition: 'transform 0.2s', padding: 0, overflow: 'hidden' }}
-        onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
-        onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}>
-        <img src={avatarSrc} alt="Ace" style={{ width: '60px', height: '60px', objectFit: 'contain' }} />
-      </button>
+      {!open && (
+        <button
+          ref={openerRef}
+          onClick={() => setOpen(true)}
+          aria-label="Chat with Ace, ScholarMate support"
+          className="fixed bottom-5 right-5 z-[9999] grid h-14 w-14 place-items-center overflow-hidden rounded-full border border-white/25 bg-emerald-700 hover:bg-emerald-600"
+        >
+          <img src={aceSupport} width={48} height={48} alt="" className="h-12 w-12 object-contain" />
+        </button>
+      )}
 
       {open && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', width: '360px', maxWidth: 'calc(100vw - 32px)', height: '540px', maxHeight: 'calc(100vh - 48px)', borderRadius: '20px', background: '#0F0A1E', border: '1px solid rgba(124,58,237,0.3)', boxShadow: '0 8px 40px rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-          <div style={{ background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'rgba(0,0,0,0.2)', border: '1.5px solid rgba(212,160,23,0.4)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <img src={avatarSrc} alt="Ace" style={{ width: '44px', height: '44px', objectFit: 'contain' }} />
+        <div
+          role="dialog"
+          aria-label="Chat with Ace"
+          onKeyDown={(e) => { if (e.key === "Escape") close(); }}
+          className="fixed bottom-5 right-5 z-[9999] flex h-[34rem] max-h-[calc(100vh-2.5rem)] w-[22.5rem] max-w-[calc(100vw-2rem)] flex-col overflow-hidden rounded-lg border border-white/15 bg-[#0F172A] shadow-xl"
+        >
+          <div className="flex items-center gap-3 border-b border-white/10 bg-emerald-800 px-4 py-3">
+            <img src={aceSupport} width={36} height={36} alt="" className="h-9 w-9 rounded-full bg-black/20 object-contain" />
+            <div className="min-w-0 flex-1">
+              <div className="text-[15px] font-semibold text-white">Ace</div>
+              <div className="text-xs text-emerald-100">Support assistant. Replies are AI generated.</div>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: '#fff', fontWeight: 700, fontSize: '15px' }}>Ace</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#22c55e' }} />
-                <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '11px' }}>Online · Customer Support</div>
-              </div>
-            </div>
-            <a href="/support" onClick={() => setOpen(false)} title="Open full chat" style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', padding: '6px 8px', fontSize: '12px', textDecoration: 'none', marginRight: '2px', display: 'inline-block' }}>⛶</a>
-            <button onClick={handleClear} title="Clear chat" style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', padding: '6px 8px', fontSize: '14px', marginRight: '4px' }}>🗑️</button>
-            <button onClick={() => setOpen(false)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '8px', color: '#fff', cursor: 'pointer', padding: '6px 10px', fontSize: '16px', fontWeight: 700 }}>✕</button>
+            <a href="/support" onClick={() => setOpen(false)} aria-label="Open the full support page" className="grid h-9 w-9 place-items-center rounded-lg text-white hover:bg-white/15">
+              <Maximize2 size={16} aria-hidden />
+            </a>
+            <button onClick={chat.clear} aria-label="Clear chat" className="grid h-9 w-9 place-items-center rounded-lg text-white hover:bg-white/15">
+              <Trash2 size={16} aria-hidden />
+            </button>
+            <button onClick={close} aria-label="Close chat" className="grid h-9 w-9 place-items-center rounded-lg text-white hover:bg-white/15">
+              <X size={18} aria-hidden />
+            </button>
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {messages.map((msg) => (
-              <div key={msg.id} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: '6px' }}>
-                {msg.role === 'ace' && (
-                  <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(124,58,237,0.3)', flexShrink: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={avatarSrc} alt="" style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-                  </div>
-                )}
-                <div style={{ maxWidth: '78%', padding: '9px 13px', borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '4px 16px 16px 16px', background: msg.role === 'user' ? 'linear-gradient(135deg, #7C3AED, #5B21B6)' : 'rgba(255,255,255,0.08)', color: '#fff', fontSize: '13px', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+          <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4" role="log" aria-live="polite" aria-label="Conversation with Ace">
+            {chat.messages.map((msg) => (
+              <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[80%] whitespace-pre-wrap rounded-lg px-3 py-2 text-sm leading-relaxed text-white ${msg.role === "user" ? "bg-emerald-700" : "bg-white/10"}`}>
                   {msg.text}
                 </div>
               </div>
             ))}
-            {loading && (
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px' }}>
-                <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'rgba(124,58,237,0.3)', overflow: 'hidden', flexShrink: 0 }}>
-                  <img src={avatarSrc} alt="" style={{ width: '26px', height: '26px', objectFit: 'contain' }} />
-                </div>
-                <div style={{ padding: '10px 14px', borderRadius: '4px 16px 16px 16px', background: 'rgba(255,255,255,0.08)', display: 'flex', gap: '4px', alignItems: 'center' }}>
-                  {[0,1,2].map((i) => <div key={i} style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#7C3AED', animation: `aceBounce 1.2s ${i*0.2}s infinite` }} />)}
+            {chat.loading && (
+              <div className="flex" role="status" aria-label="Ace is typing">
+                <div className="flex items-center gap-1 rounded-lg bg-white/10 px-3 py-3">
+                  {[0, 1, 2].map((i) => (
+                    <span key={i} className="h-1.5 w-1.5 rounded-full bg-emerald-300" style={{ animation: `aceBounce 1.2s ${i * 0.2}s infinite` }} />
+                  ))}
                 </div>
               </div>
             )}
-            {guestLimitReached && (
-              <div style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(124,58,237,0.4)', borderRadius: '14px', padding: '14px', textAlign: 'center' }}>
-                <div style={{ fontSize: '22px', marginBottom: '6px' }}>🔒</div>
-                <div style={{ color: '#fff', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>You've used your free messages</div>
-                <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px', marginBottom: '12px' }}>Sign in free to keep chatting with Ace</div>
-                <a href="/auth" style={{ display: 'inline-block', background: 'linear-gradient(135deg, #7C3AED, #5B21B6)', color: '#fff', borderRadius: '20px', padding: '8px 20px', fontSize: '13px', fontWeight: 700, textDecoration: 'none' }}>Sign in free →</a>
+            {chat.guestLimitReached && (
+              <div className="rounded-lg border border-white/15 p-4 text-center">
+                <p className="text-sm font-semibold text-white">You have used your {GUEST_LIMIT} free messages</p>
+                <p className="mt-1 text-xs text-slate-300">Create a free account to keep chatting with Ace.</p>
+                <a href="/auth" className="sm-btn-primary mt-3 inline-block rounded-lg px-4 py-2 text-sm font-semibold text-white">Sign in or sign up</a>
               </div>
             )}
             <div ref={bottomRef} />
           </div>
 
-          {!guestLimitReached && (
-            <div style={{ padding: '10px 12px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-              <input ref={inputRef} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={handleKey}
-                placeholder="Message Ace..." disabled={loading}
-                style={{ flex: 1, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '24px', padding: '10px 16px', color: '#fff', fontSize: '13px', outline: 'none' }} />
-              <button onClick={send} disabled={loading || !input.trim()}
-                style={{ width: '38px', height: '38px', borderRadius: '50%', background: loading || !input.trim() ? 'rgba(124,58,237,0.3)' : 'linear-gradient(135deg, #7C3AED, #5B21B6)', border: 'none', cursor: loading || !input.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>➤</button>
-            </div>
+          {!chat.guestLimitReached && (
+            <form
+              onSubmit={(e) => { e.preventDefault(); chat.send(); }}
+              className="flex items-center gap-2 border-t border-white/10 p-3"
+            >
+              <label htmlFor="ace-input" className="sr-only">Message Ace</label>
+              <input
+                id="ace-input"
+                ref={inputRef}
+                value={chat.input}
+                onChange={(e) => chat.setInput(e.target.value)}
+                placeholder="Ask about the app"
+                disabled={chat.loading}
+                className="min-w-0 flex-1 rounded-lg border border-white/15 bg-transparent px-3 py-2.5 text-sm text-white placeholder:text-slate-400"
+              />
+              <button type="submit" disabled={chat.loading || !chat.input.trim()} aria-label="Send message" className="sm-btn-primary grid h-10 w-10 shrink-0 place-items-center rounded-lg text-white disabled:opacity-50">
+                <Send size={16} aria-hidden />
+              </button>
+            </form>
           )}
-          {!isSignedIn && !guestLimitReached && guestCount > 0 && (
-            <div style={{ textAlign: 'center', padding: '4px 0 8px', fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>
-              {GUEST_LIMIT - guestCount} free {GUEST_LIMIT - guestCount === 1 ? 'message' : 'messages'} left · <a href="/auth" style={{ color: 'rgba(124,58,237,0.8)', textDecoration: 'none' }}>Sign in for unlimited</a>
-            </div>
+          {!chat.isSignedIn && !chat.guestLimitReached && chat.guestCount > 0 && (
+            <p className="px-3 pb-3 text-center text-xs text-slate-300">
+              {chat.guestMessagesLeft} free {chat.guestMessagesLeft === 1 ? "message" : "messages"} left. <a href="/auth" className="underline underline-offset-2 hover:text-white">Sign in for no limit</a>
+            </p>
           )}
         </div>
       )}
-      <style>{`@keyframes aceBounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }`}</style>
     </>
   );
 }
